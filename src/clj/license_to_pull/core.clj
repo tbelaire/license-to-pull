@@ -1,7 +1,7 @@
 (ns license-to-pull.core
     (:require [compojure.handler :as handler]
               [compojure.route :as route]
-              [compojure.core :refer [GET POST defroutes]]
+              [compojure.core :refer [GET POST ANY defroutes]]
               [ring.util.response :as resp]
               [cheshire.core :as json]
               [clojure.contrib.core :refer [-?>]]
@@ -12,6 +12,10 @@
    :headers {"Content-Type" "application/json"}
    :body (json/generate-string data)})
 
+(defn str->int [str]
+  (if (re-matches (re-pattern "-?\\d+") str)
+    (read-string str)))
+
 (defroutes app-routes
   (GET "/" [] (resp/redirect "/index.html"))
 
@@ -20,6 +24,13 @@
 
   (POST "/test" req (json-response
                      {:message "Doing something something important..."}))
+
+  (ANY "/add" [num] (json-response
+                    (let [n (str->int num)]
+                      (if (nil? n)
+                        "NOPE"
+                        (+ 1 n)))))
+
 
   (route/resources "/")
   (route/not-found "Page not found"))
