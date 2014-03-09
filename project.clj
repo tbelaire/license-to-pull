@@ -4,6 +4,7 @@
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.reader "0.8.2"]
+                 [org.clojure/clojure-contrib "1.2.0"]
                  ;; CLJ
                  [ring/ring-core "1.2.0"]
                  [compojure "1.1.6"]
