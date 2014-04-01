@@ -1,2 +1,0 @@
-(require 'tentacles.repos)
-exit
