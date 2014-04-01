@@ -19,7 +19,11 @@
 
   :plugins [[lein-cljsbuild "1.0.1"]
             [lein-ring "0.8.7"]
-            [lein-pdo "0.1.1"]]
+            [lein-pdo "0.1.1"]
+            [lein-lesscss "1.2"]]
+
+  :lesscss-paths ["less"]
+  :lesscss-output-path "resources/public/css"
 
   :aliases {"dev" ["pdo" "cljsbuild" "auto" "dev," "ring" "server-headless"]}
 
