@@ -5,7 +5,8 @@
               [ring.util.response :as resp]
               [cheshire.core :as json]
               [clojure.contrib.core :refer [-?>]]
-              [clojure.java.io :as io]))
+              [clojure.java.io :as io]
+              [tentacles.repos :as tent]))
 
 (defn json-response [data & [status]]
   {:status (or status 200)
@@ -30,6 +31,9 @@
                       (if (nil? n)
                         "NOPE"
                         (+ 1 n)))))
+
+  (GET "/lookup/:userid/" [userid]
+       (json-response (tent/user-repos userid)))
 
 
   (route/resources "/")
