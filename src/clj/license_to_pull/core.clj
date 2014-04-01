@@ -18,6 +18,15 @@
     (read-string str)))
 
 (defroutes api-routes
+  (GET "/" [] (resp/redirect "/index.html"))
+
+  (GET "/login" [] (resp/redirect (str "https://github.com/login/oauth/authorize"
+                                       "?client_id=e4bdd8487db3f8ecbc7a"
+                                       "&http://localhost:3000/oauth-callback")))
+
+  (GET "/oauth-callback" {params :params} (resp/redirect 
+                                            (str "/repos?code=" (params :code))))
+
   (GET "/test" [] (json-response
                     {:message "You are testing number: "}))
 
@@ -31,7 +40,7 @@
                           (+ 1 n)))))
 
   (GET "/lookup/:userid/" [userid]
-       (json-response (tent/user-repos userid))))
+       (json-response (rest (tent/user-repos userid)))))
 
 (defroutes site-routes
   (GET "/" [] (resp/redirect "/index.html"))
