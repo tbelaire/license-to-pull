@@ -83,15 +83,6 @@
     pull))
 
 (defroutes api-routes
-  (GET "/" [] (resp/redirect "/index.html"))
-
-  (GET "/login" [] (resp/redirect (str "https://github.com/login/oauth/authorize"
-                                       "?client_id=e4bdd8487db3f8ecbc7a"
-                                       "&http://localhost:3000/oauth-callback")))
-
-  (GET "/oauth-callback" {params :params} (resp/redirect 
-                                            (str "/repos?code=" (params :code))))
-
   (GET "/test" [] (json-response
                     {:message "You are testing number: "}))
 
@@ -118,7 +109,7 @@
                                        "?client_id=e4bdd8487db3f8ecbc7a"
                                        "&http://localhost:3000/oauth-callback")))
 
-  (GET "/oauth-callback" {params :params} (resp/redirect 
+  (GET "/oauth-callback" {params :params} (resp/redirect
                                             (str "/repos?code=" (params :code))))
 
   (route/resources "/")
