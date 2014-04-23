@@ -9,6 +9,7 @@
             [clojure.java.io :as io]
             [tentacles.repos :as repos]
             [tentacles.data :as gh-api]
+            [tentacles.pulls :as pulls]
             [clojure.pprint]))
 
 (defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=")
@@ -27,35 +28,13 @@
 (defn base-64-decode [string]
   (base64/decode (clojure.string/replace string "\n" "")))
 
+(def auth ["pullbot" "notachance"])
 
-(defn get-readme
-  [user repo]
-  (let [master-tree-sha (:sha (:object (gh-api/reference user repo "heads/master")))
-        root-tree       (gh-api/tree user repo master-tree-sha)
-        readme-sha      (:sha (first (filter #(= (:path %) "README.md") (:tree root-tree))))
-        readme-blob     (gh-api/blob user repo readme-sha {:accept "application/vnd.github.v3.raw"})]
-    readme-blob))
-    ;(base-64-decode (:content readme-blob))))
 
-(defn make-readme-commit
-  [user repo auth]
-  (let [master-json     (dbg (gh-api/reference user repo "heads/master"))
-        master-tree-sha (:sha (:object master-json))
-        root-tree       (dbg (gh-api/tree user repo master-tree-sha))
-        new-blob-readme (dbg (gh-api/create-blob user repo "this is a readme" "utf-8" {:auth auth, :throw-exceptions true}))
-        new-tree-readme (dbg {:path "README.txt", :mode "100644", :type "blob" :sha (:sha new-blob-readme)})
-        new-tree-root   (dbg (gh-api/create-tree user repo [new-tree-readme] {:auth auth,
-                                                                            ; :base-tree (:sha root-tree)
-                                                                            :throw-exceptions true,
-                                                                            }))
-        commit (dbg (tentacles.core/api-call :post "repos/%s/%s/git/commits" [user repo]
-                  (dbg {:message "New commit"
-                        :tree {:sha (:sha (:object master-json))}
-                        :parents [ (:sha master-json) ]
-                        :auth auth
-                   })))]
-        ; commit          (dbg (gh-api/create-commit user repo "Auto commit" (dbg {:sha (:sha new-tree-root)}) (dbg {:parents [(:sha master-json)] :auth auth})))]
-    commit))
+(defn read-file
+  [user repo auth path]
+  (tentacles.core/api-call :get "/repos/%s/%s/contents/%s" [user repo path]
+                           {:auth auth}))
 
 (defn create-new-file
   [user repo auth path message content]
@@ -72,6 +51,36 @@
                               :content (base64/encode content)
                               :sha (:sha prev-contents)
                               :auth auth})))
+
+(defn open-pull
+  [user repo auth base head title body]
+  (tentacles.core/api-call :put "/repos/%s/%s/pulls" [user repo]
+                           {:base base
+                            :head head
+                            :title title
+                            :body body
+                            :auth auth}))
+(def licences
+  {:mit {:title "MIT Licence", :body "An Open Licence",
+         :content "MIT License word words words"}})
+
+(defn open-pull-license
+  "Assume there isn't a fork already, fork it and PR a branch with licence"
+  [user repo auth licence-type]
+  (let [fork (tentacles.repos/create-fork user repo {:auth auth})
+        licence (licence-type licences)
+        licence-commit (create-new-file "pullbot" repo "LICENCE" "BEEP BOOP COMMIT"
+                                      (:content licence))
+
+        branch (tentacles.data/create-reference "pullbot" repo "licence"
+                                                (:sha licence-commit)
+                                                {:auth auth})
+        pull (open-pull user repo auth
+                        ":user/master" ;; TODO
+                        "pullbot/licence"
+                        (:title licence)
+                        (:content licence))]
+    pull))
 
 (defroutes api-routes
   (GET "/test" [] (json-response
@@ -90,7 +99,7 @@
        (json-response (repos/user-repos userid)))
   (GET "/mkreadme/:message/:content" [message content] (json-response (update-file "pullbot" "sandbox" auth "README.md" message content)))
   (GET "/readme/" []
-       (json-response (get-readme "pullbot" "sandbox"))))
+       (json-response (read-file "pullbot" "sandbox" auth "README.md"))))
 
 
 
