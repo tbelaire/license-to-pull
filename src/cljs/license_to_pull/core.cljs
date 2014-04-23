@@ -18,12 +18,17 @@
     om/IRender
     (render [_]
       (dom/div nil
-               (apply dom/ul nil
-               (map (fn [text] (dom/li nil text))
-                      (:things app)))))))
-
-(go (let [response (<! (http/get "/lookup/tbelaire/" {:with-credentials? false}))]
-            (swap! app-state conj @app-state
-                   {:things (rest (map :clone_url (:body response)))})))
+               (dom/a #js { :className "pure-button"
+                            :href "/login" }
+                      (dom/i #js { :className "fa fa-github" })
+                  " Sign in with GitHub")
+               ))))
+; (apply dom/ul nil
+;                  (map (fn [text] (dom/li nil text))
+;                         (:things app)))
+; (go (let [response (<! (http/get "/lookup/tbelaire/" {:with-credentials? false}))]
+;       (prn response)
+;             (swap! app-state conj @app-state
+;                    {:things (map :clone_url (:body response))})))
 
 (om/root app-state license-to-pull-app (.getElementById js/document "content"))
