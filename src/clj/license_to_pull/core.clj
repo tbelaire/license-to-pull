@@ -96,7 +96,7 @@
                           (+ 1 n)))))
 
   (GET "/lookup/:userid/" [userid]
-       (json-response (repos/user-repos userid)))
+       (json-response (rest (repos/user-repos userid))))
   (GET "/mkreadme/:message/:content" [message content] (json-response (update-file "pullbot" "sandbox" auth "README.md" message content)))
   (GET "/readme/" []
        (json-response (read-file "pullbot" "sandbox" auth "README.md"))))
@@ -105,6 +105,12 @@
 
 (defroutes site-routes
   (GET "/" [] (resp/redirect "/index.html"))
+  (GET "/login" [] (resp/redirect (str "https://github.com/login/oauth/authorize"
+                                       "?client_id=e4bdd8487db3f8ecbc7a"
+                                       "&http://localhost:3000/oauth-callback")))
+
+  (GET "/oauth-callback" {params :params} (resp/redirect 
+                                            (str "/repos?code=" (params :code))))
 
   (route/resources "/")
   (route/not-found "Page not found"))
