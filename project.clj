@@ -16,12 +16,15 @@
                  [cljs-http "0.1.3"]
                  [om "0.1.7"]
                  ;; Other
-                 [tentacles "0.2.5"]]
+                 [tentacles "0.2.5"]
+                 ;;; For something like secrets.py, but with env vars
+                 [environ "0.5.0"]]
 
   :plugins [[lein-cljsbuild "1.0.1"]
             [lein-ring "0.8.7"]
             [lein-pdo "0.1.1"]
-            [lein-lesscss "1.2"]]
+            [lein-lesscss "1.2"]
+            [lein-environ "0.5.0"]]
 
   :lesscss-paths ["less"]
   :lesscss-output-path "resources/public/css"

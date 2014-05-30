@@ -10,7 +10,8 @@
             [tentacles.repos :as repos]
             [tentacles.data :as gh-api]
             [tentacles.pulls :as pulls]
-            [clojure.pprint]))
+            [clojure.pprint]
+            [environ.core]))
 
 (defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=")
                                (clojure.pprint/pprint x#)
@@ -28,7 +29,7 @@
 (defn base-64-decode [string]
   (base64/decode (clojure.string/replace string "\n" "")))
 
-(def auth ["pullbot" "notachance"])
+(def auth ["pullbot" (environ.core/env :pullbot-password)])
 
 
 (defn read-file
@@ -104,6 +105,7 @@
 
 
 (defroutes site-routes
+  (GET "/env" [] (json-response (environ.core/env :pullbot-password)))
   (GET "/" [] (resp/redirect "/index.html"))
   (GET "/login" [] (resp/redirect (str "https://github.com/login/oauth/authorize"
                                        "?client_id=e4bdd8487db3f8ecbc7a"
