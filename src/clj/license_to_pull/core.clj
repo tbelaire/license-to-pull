@@ -6,6 +6,7 @@
             [ring.util.response :as resp]
             [cheshire.core :as json]
             [clojure.contrib.core :refer [-?>]]
+            [clojure.contrib.string :refer [substring?]]
             [clojure.java.io :as io]
             [tentacles.repos :as repos]
             [tentacles.data :as gh-api]
@@ -19,9 +20,9 @@
                     x#))
 
 (defn json-response [data & [status]]
-  {:status (or status 200)
-   :headers {"Content-Type" "application/json"}
-   :body (json/generate-string data)})
+  {:status (or status 200),
+   :headers {"Content-Type" "application/json"},
+   :body (json/generate-string data {:pretty true})})
 
 (defn str->int [str]
   (if (re-matches (re-pattern "-?\\d+") str)
@@ -53,8 +54,25 @@
     (tentacles.core/api-call :put "/repos/%s/%s/contents/%s" [user repo path]
                              (merge {:message message
                                      :content (base64/encode content)
-                                     :sha (:sha (dbg prev-contents))}
+                                     :sha (:sha prev-contents)}
                                     auth))))
+(defn ls-root
+  [user repo auth]
+  (let [contents (tentacles.core/api-call
+                   :get "repos/%s/%s/contents/" [user repo] auth)]
+    (map (fn [m] {:name (:name m)
+                  :path (:path m)})
+         ; TODO drop the {:XRate-limiting ..} element
+         (dbg contents))))
+
+(defn fuzzy-search
+  [needle haystack]
+  (let [lc-needle (clojure.string/lower-case needle)
+        lc-haystack (map #(update-in %1 [:name] clojure.string/lower-case)
+                         haystack)]
+    (for [hay lc-haystack
+          :when (substring? lc-needle (:name hay))]
+      (:path hay))))
 
 (defn open-pull
   [user repo auth base head title body]

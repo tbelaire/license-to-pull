@@ -35,7 +35,7 @@
   :ring {:handler license-to-pull.core/app
          :init    license-to-pull.core/init}
 
-  :source-paths ["src/clj"]
+  :source-paths ["src/clj" "test/clj"]
 
   :cljsbuild {
               :builds [{:id "dev"
