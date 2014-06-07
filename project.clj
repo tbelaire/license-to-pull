@@ -24,7 +24,7 @@
   :lesscss-paths ["less"]
   :lesscss-output-path "resources/public/css"
 
-  :aliases {"dev" ["pdo" "auto" "dev," "ring" "server-headless"]}
+  :aliases {"dev" ["pdo" "ring" "server-headless"]}
 
   :ring {:handler license-to-pull.core/app
          :init    license-to-pull.core/init}
