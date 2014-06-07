@@ -10,6 +10,7 @@
             [tentacles.repos :as repos]
             [tentacles.data :as gh-api]
             [tentacles.pulls :as pulls]
+            [clj-http.client :as http]
             [clojure.pprint]
             [environ.core]))
 
@@ -30,7 +31,8 @@
   (base64/decode (clojure.string/replace string "\n" "")))
 
 (def auth ["pullbot" (environ.core/env :pullbot-password)])
-
+(def gh-ltp-auth {:client-id (environ.core/env :licence-to-pull-client-id)
+                  :client-secret (environ.core/env :licence-to-pull-client-secret)})
 
 (defn read-file
   [user repo auth path]
@@ -73,7 +75,7 @@
         licence-commit (create-new-file "pullbot" repo "LICENCE" "BEEP BOOP COMMIT"
                                       (:content licence))
 
-        branch (tentacles.data/create-reference "pullbot" repo "licence"
+        branch (tentacles.data/create-reference "pul" repo "licence"
                                                 (:sha licence-commit)
                                                 {:auth auth})
         pull (open-pull user repo auth
@@ -82,6 +84,17 @@
                         (:title licence)
                         (:content licence))]
     pull))
+
+(defn call-gh-login
+  [code]
+    (http/post "https://github.com/login/oauth/access_token"
+               {:accept :json
+                :query-params {:client_id (:client-id gh-ltp-auth)
+                               :client_secret (:client-secret gh-ltp-auth)
+                               :code code
+                               :redirect_uri "http://localhost:3000/oauth-callback/phase2"}
+                :as :json}))
+
 
 (defroutes api-routes
   (GET "/test" [] (json-response
@@ -102,17 +115,20 @@
   (GET "/readme/" []
        (json-response (read-file "pullbot" "sandbox" auth "README.md"))))
 
-
-
 (defroutes site-routes
-  (GET "/env" [] (json-response (environ.core/env :pullbot-password)))
   (GET "/" [] (resp/redirect "/index.html"))
   (GET "/login" [] (resp/redirect (str "https://github.com/login/oauth/authorize"
-                                       "?client_id=e4bdd8487db3f8ecbc7a"
-                                       "&http://localhost:3000/oauth-callback")))
+                                       "?client_id="
+                                       (:client-id gh-ltp-auth)
+                                       "&redirect_uri=http://localhost:3000/oauth-callback"
+                                       "&state=4")))
 
-  (GET "/oauth-callback" {params :params} (resp/redirect
-                                            (str "/repos?code=" (params :code))))
+  (ANY "/echo" {params :params}
+       (json-response params))
+  (GET "/oauth-callback" {params :params}
+       (json-response (:body (call-gh-login (:code params)))))
+  (GET "/oauth-callback/phase2" {params :params}
+       (json-response params))
 
   (route/resources "/")
   (route/not-found "Page not found"))
