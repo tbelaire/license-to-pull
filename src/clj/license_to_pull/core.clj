@@ -30,39 +30,40 @@
 (defn base-64-decode [string]
   (base64/decode (clojure.string/replace string "\n" "")))
 
-(def auth ["pullbot" (environ.core/env :pullbot-password)])
+(def auth {:auth ["pullbot" (environ.core/env :pullbot-password)]})
 (def gh-ltp-auth {:client-id (environ.core/env :licence-to-pull-client-id)
                   :client-secret (environ.core/env :licence-to-pull-client-secret)})
+(def tbelaire-auth {:oauth-token (environ.core/env :ltp-tbelaire-code)})
 
 (defn read-file
   [user repo auth path]
   (tentacles.core/api-call :get "/repos/%s/%s/contents/%s" [user repo path]
-                           {:auth auth}))
+                           auth))
 
 (defn create-new-file
   [user repo auth path message content]
   (tentacles.core/api-call :put "/repos/%s/%s/contents/%s" [user repo path]
-                           {:message message
-                            :content (base64/encode content)
-                            :auth auth}))
+                           (merge {:message message
+                                   :content (base64/encode content)}
+                                  auth)))
 
 (defn update-file
   [user repo auth path message content]
-  (let [prev-contents (tentacles.core/api-call :get "/repos/%s/%s/contents/%s" [user repo path] {:auth auth})]
+  (let [prev-contents (tentacles.core/api-call :get "/repos/%s/%s/contents/%s" [user repo path] auth)]
     (tentacles.core/api-call :put "/repos/%s/%s/contents/%s" [user repo path]
-                             {:message message
-                              :content (base64/encode content)
-                              :sha (:sha prev-contents)
-                              :auth auth})))
+                             (merge {:message message
+                                     :content (base64/encode content)
+                                     :sha (:sha (dbg prev-contents))}
+                                    auth))))
 
 (defn open-pull
   [user repo auth base head title body]
   (tentacles.core/api-call :put "/repos/%s/%s/pulls" [user repo]
-                           {:base base
-                            :head head
-                            :title title
-                            :body body
-                            :auth auth}))
+                           (merge {:base base
+                                   :head head
+                                   :title title
+                                   :body body}
+                                  auth)))
 (def licences
   {:mit {:title "MIT Licence", :body "An Open Licence",
          :content "MIT License word words words"}})
@@ -111,7 +112,8 @@
 
   (GET "/lookup/:userid/" [userid]
        (json-response (rest (repos/user-repos userid))))
-  (GET "/mkreadme/:message/:content" [message content] (json-response (update-file "pullbot" "sandbox" auth "README.md" message content)))
+  (GET "/mkreadme/:message/:content" [message content]
+       (json-response (update-file "pullbot" "sandbox" auth "README.md" message content)))
   (GET "/readme/" []
        (json-response (read-file "pullbot" "sandbox" auth "README.md"))))
 
