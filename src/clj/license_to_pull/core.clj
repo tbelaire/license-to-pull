@@ -31,10 +31,16 @@
 (defn base-64-decode [string]
   (base64/decode (clojure.string/replace string "\n" "")))
 
-(def auth {:auth ["pullbot" (environ.core/env :pullbot-password)]})
-(def gh-ltp-auth {:client-id (environ.core/env :licence-to-pull-client-id)
-                  :client-secret (environ.core/env :licence-to-pull-client-secret)})
+
+;; Pullbot auth, for doing pull requests and creating forks.
+(def pullbot-auth {:auth ["pullbot" (environ.core/env :pullbot-password)]})
+;; Temporary auth, will be derived from oauth and session cookie.
+(def user-auth {:auth ["pullbot" (environ.core/env :pullbot-password)]})
+;; For testing
 (def tbelaire-auth {:oauth-token (environ.core/env :ltp-tbelaire-code)})
+;; Oauth client information
+(def gh-ltp-auth {:client-id (environ.core/env :license-to-pull-client-id)
+                  :client-secret (environ.core/env :license-to-pull-client-secret)})
 
 (defn read-file
   [user repo auth path]
@@ -62,8 +68,7 @@
                    :get "repos/%s/%s/contents/" [user repo] auth)]
     (map (fn [m] {:name (:name m)
                   :path (:path m)})
-         ; TODO drop the {:XRate-limiting ..} element
-         (dbg contents))))
+         (rest contents))))
 
 (defn fuzzy-search
   [needle haystack]
@@ -82,26 +87,26 @@
                                    :title title
                                    :body body}
                                   auth)))
-(def licences
+(def licenses
   {:mit {:title "MIT Licence", :body "An Open Licence",
          :content "MIT License word words words"}})
 
 (defn open-pull-license
-  "Assume there isn't a fork already, fork it and PR a branch with licence"
-  [user repo auth licence-type]
+  "Assume there isn't a fork already, fork it and PR a branch with license"
+  [user repo auth license-type]
   (let [fork (tentacles.repos/create-fork user repo {:auth auth})
-        licence (licence-type licences)
-        licence-commit (create-new-file "pullbot" repo "LICENCE" "BEEP BOOP COMMIT"
-                                      (:content licence))
+        license (license-type licenses)
+        license-commit (create-new-file "pullbot" repo "LICENCE" "BEEP BOOP COMMIT"
+                                      (:content license))
 
-        branch (tentacles.data/create-reference "pul" repo "licence"
-                                                (:sha licence-commit)
+        branch (tentacles.data/create-reference "pul" repo "license"
+                                                (:sha license-commit)
                                                 {:auth auth})
         pull (open-pull user repo auth
                         ":user/master" ;; TODO
-                        "pullbot/licence"
-                        (:title licence)
-                        (:content licence))]
+                        "pullbot/license"
+                        (:title license)
+                        (:content license))]
     pull))
 
 (defn call-gh-login
@@ -116,24 +121,16 @@
 
 
 (defroutes api-routes
-  (GET "/test" [] (json-response
-                    {:message "You are testing number: "}))
-
-  (POST "/test" req (json-response
-                      {:message "Doing something something important..."}))
-
-  (ANY "/add" [num] (json-response
-                      (let [n (str->int num)]
-                        (if (nil? n)
-                          "NOPE"
-                          (+ 1 n)))))
-
+  ;; This api function is about ready.
   (GET "/lookup/:userid/" [userid]
-       (json-response (rest (repos/user-repos userid))))
-  (GET "/mkreadme/:message/:content" [message content]
-       (json-response (update-file "pullbot" "sandbox" auth "README.md" message content)))
-  (GET "/readme/" []
-       (json-response (read-file "pullbot" "sandbox" auth "README.md"))))
+       (json-response (map :name (rest (repos/user-repos userid user-auth)))))
+  (GET "/license/:userid/:repo/" [userid repo]
+       (json-response (fuzzy-search "license" (ls-root userid repo user-auth))))
+  (POST "/pull-request/:userid/:repo/:license/" [userid repo license pullbot-auth]
+        (json-response ["Not implemented... Yet"
+                        {:userid userid,
+                        :repo repo,
+                        :license license}])))
 
 (defroutes site-routes
   (GET "/" [] (resp/redirect "/index.html"))
@@ -143,10 +140,9 @@
                                        "&redirect_uri=http://localhost:3000/oauth-callback"
                                        "&state=4")))
 
-  (ANY "/echo" {params :params}
-       (json-response params))
   (GET "/oauth-callback" {params :params}
        (json-response (:body (call-gh-login (:code params)))))
+  ;; I think this is only called by githubs callback, and ignored.
   (GET "/oauth-callback/phase2" {params :params}
        (json-response params))
 
