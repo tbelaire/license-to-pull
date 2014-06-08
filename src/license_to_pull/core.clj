@@ -10,7 +10,8 @@
             [clj-http.client :as http]
             [clojure.pprint]
             [environ.core]
-            [license-to-pull.gh :as gh])
+            [license-to-pull.gh :as gh]
+            [license-to-pull.views :as views])
   (:use license-to-pull.utils
         license-to-pull.spy))
 
@@ -70,7 +71,7 @@
 
 (defroutes site-routes
   (GET "/" []
-       (resp/redirect "/index.html"))
+       views/landing)
   (GET "/login" []
        (let [state (rand-int 9999)] ;; TODO upper bound?
          (assoc
@@ -107,6 +108,18 @@
   ;; I think this is only called by githubs callback, and ignored.
   (GET "/oauth-callback/phase2" {params :params}
        (json-response params))
+
+  (GET "/listing/" {session :session}
+       (if-let [user-auth (:auth session)]
+         (let [user (:user session)]
+           (views/listing-page
+             user
+             (for [{repo :name} (take 3 (gh/list-repos (:username user) user-auth))]
+             {:name repo
+              :licenses (fuzzy-search
+                          "license"
+                          (gh/ls-root (:username user) repo user-auth))})))
+         "Y U NO login"))
 
   (route/resources "/")
   (route/not-found "Page not found"))

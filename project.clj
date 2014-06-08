@@ -11,6 +11,7 @@
                  [cheshire "5.2.0"]
                  [base64-clj "0.1.1"]
                  [clj-http "0.9.2"]
+                 [hiccup "1.0.5"]
                  ;; Other
                  [tentacles "0.2.5"]
                  ;;; For something like secrets.py, but with env vars
@@ -29,4 +30,4 @@
   :ring {:handler license-to-pull.core/app
          :init    license-to-pull.core/init}
 
-  :source-paths ["src/clj" "test/clj"])
+  :source-paths ["src"])
