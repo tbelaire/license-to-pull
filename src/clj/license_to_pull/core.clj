@@ -22,8 +22,6 @@
 
 ;; Pullbot auth, for doing pull requests and creating forks.
 (def pullbot-auth {:auth ["pullbot" (environ.core/env :pullbot-password)]})
-;; Temporary auth, will be derived from oauth and session cookie.
-(def user-auth {:auth ["pullbot" (environ.core/env :pullbot-password)]})
 ;; For testing
 (def tbelaire-auth {:oauth-token (environ.core/env :ltp-tbelaire-code)})
 ;; Oauth client information
@@ -44,10 +42,14 @@
 
 (defroutes api-routes
   ;; This api function is about ready.
-  (GET "/lookup/:userid/" [userid]
-       (json-response (map :name (gh/list-repos userid user-auth))))
-  (GET "/license/:userid/:repo/" [userid repo]
-       (json-response (fuzzy-search "license" (gh/ls-root userid repo user-auth))))
+  (GET "/lookup/:userid/" [userid :as {session :session}]
+       (if-let [user-auth (:auth session)]
+         (json-response (map :name (gh/list-repos userid user-auth)))
+         (json-response "Y U NO login" 400)))
+  (GET "/license/:userid/:repo/" [userid repo :as {session :session}]
+       (if-let [user-auth (:auth session)]
+         (json-response (fuzzy-search "license" (gh/ls-root userid repo user-auth)))
+         (json-response "Y U NO login" 400)))
   (POST "/pull-request/:userid/:repo/:license/" [userid repo license pullbot-auth]
         (json-response ["Not implemented... Yet"
                         {:userid userid,
@@ -56,15 +58,8 @@
   ;; These are not stable
   (GET "/me/" ;{{{username :username} :user} :session}
        {session :session}
-       (println session)
        (let [username (get-in session [:user :username])]
          (resp/redirect (str "/api/lookup/" username "/"))))
-  (GET "/session/" {session :session}
-       (if-let [num (:id session)]
-         (assoc (json-response session)
-                :session (assoc session :id (+ 1 num)))
-         (assoc (json-response session)
-                :session (assoc session :id 1))))
   (GET "/readme/" []
        (json-response
          (base-64-decode (:contents (gh/read-file "pullbot" "sandbox" pullbot-auth "README.md")))))
@@ -129,5 +124,4 @@
     (ring.middleware.params/wrap-params)
     ; (wrap-spy "First")
     ))
-
 
