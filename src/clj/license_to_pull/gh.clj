@@ -4,6 +4,7 @@
     [cheshire.core :as json]
     [tentacles.repos]
     [tentacles.data]
+    [tentacles.users]
     [tentacles.pulls])
   (:use
     [license-to-pull.utils]))
@@ -29,6 +30,12 @@
                                      :content (base64/encode content)
                                      :sha (:sha prev-contents)}
                                     auth))))
+(defn get-user
+  [auth]
+  (let [gh-response (tentacles.users/me auth)]
+    {:username (:login gh-response),
+     :name (:name gh-response)}))
+
 (defn ls-root
   [user repo auth]
   (let [contents (tentacles.core/api-call
@@ -36,6 +43,10 @@
     (map (fn [m] {:name (:name m)
                   :path (:path m)})
          (rest contents))))
+
+(defn list-repos
+  [userid auth]
+  (rest (tentacles.repos/user-repos userid auth)))
 
 (defn open-pull
   [user repo auth base head title body]
