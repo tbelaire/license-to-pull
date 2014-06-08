@@ -3,8 +3,9 @@
             [clojure.contrib.string :refer [substring?]]))
 
 (defn str->int [str]
-  (if (re-matches (re-pattern "-?\\d+") str)
-    (read-string str)))
+  (if str
+    (if (re-matches (re-pattern "-?\\d+") str)
+      (read-string str))))
 
 (defn base-64-decode [string]
   (base64/decode (clojure.string/replace string "\n" "")))

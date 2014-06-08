@@ -11,7 +11,8 @@
             [clojure.pprint]
             [environ.core]
             [license-to-pull.gh :as gh])
-  (:use license-to-pull.utils))
+  (:use license-to-pull.utils
+        license-to-pull.spy))
 
 
 (defn json-response [data & [status]]
@@ -53,6 +54,17 @@
                         :repo repo,
                         :license license}]))
   ;; These are not stable
+  (GET "/me/" ;{{{username :username} :user} :session}
+       {session :session}
+       (println session)
+       (let [username (get-in session [:user :username])]
+         (resp/redirect (str "/api/lookup/" username "/"))))
+  (GET "/session/" {session :session}
+       (if-let [num (:id session)]
+         (assoc (json-response session)
+                :session (assoc session :id (+ 1 num)))
+         (assoc (json-response session)
+                :session (assoc session :id 1))))
   (GET "/readme/" []
        (json-response
          (base-64-decode (:contents (gh/read-file "pullbot" "sandbox" pullbot-auth "README.md")))))
@@ -91,7 +103,7 @@
                  username (gh/get-user auth)]
              (assoc (json-response {:user username})
                     :session {:auth auth
-                             :user username}))
+                              :user username}))
            ;; Stored state is different
            (json-response ["The states are different", stored-state, gh-state] 400))
          ;; No stored session state
@@ -106,7 +118,16 @@
 
 (def app
   (->
-      (routes (handler/api (context "/api" [] api-routes))
-              (handler/site site-routes))
+      (routes (context "/api" [] api-routes)
+              site-routes)
+    ; (wrap-spy "After session")
     ring.middleware.session/wrap-session
+    ; ring.middleware.nested-params/wrap-nested-params
+    ; (wrap-spy "After keyword")
+    (ring.middleware.keyword-params/wrap-keyword-params)
+    ; (wrap-spy "After params")
+    (ring.middleware.params/wrap-params)
+    ; (wrap-spy "First")
     ))
+
+
