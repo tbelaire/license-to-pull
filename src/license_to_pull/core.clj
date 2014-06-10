@@ -114,11 +114,13 @@
          (let [user (:user session)]
            (views/listing-page
              user
-             (for [{repo :name} (take 3 (gh/list-repos (:username user) user-auth))]
-             {:name repo
-              :licenses (fuzzy-search
-                          "license"
-                          (gh/ls-root (:username user) repo user-auth))})))
+             (pmap
+               (fn [{repo :name}]
+                 {:name repo
+                  :licenses (fuzzy-search
+                              "license"
+                              (gh/ls-root (:username user) repo user-auth))})
+               (gh/list-repos (:username user) user-auth))))
          "Y U NO login"))
 
   (route/resources "/")
