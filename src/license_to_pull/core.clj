@@ -97,7 +97,7 @@
            (let [gh-response (call-gh-login code)
                  auth {:oauth-token (:access_token (:body gh-response))}
                  username (gh/get-user auth)]
-             (assoc (json-response {:user username})
+             (assoc (resp/redirect "/listing/")
                     :session {:auth auth
                               :user username}))
            ;; Stored state is different
