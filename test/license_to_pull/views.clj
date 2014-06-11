@@ -24,13 +24,19 @@
      [:div.centered
       [:a {:href "/login", :class "pure-button"}
        [:i.fa.fa-github]
-       [:span " Sign in with GitHub"]]]))
+       " Sign in with GitHub"]]))
 
 ;; For listing repos
 (defn repo-item
-  [username repo]
-  (html
-        [:span (str username "/" repo)]))
+  [user repo]
+  (let [full-name (str (:username user) "/" (:name repo))
+        color (if (empty? (:licenses repo))
+                "needs-license"
+                "has-license")]
+    (html [:a {:href (url "http://github.com/" full-name)}
+           full-name]
+          [:span {:class color}
+           (str (vec (:licenses repo)))])))
 
 (defn listing-page
   "repo-list is [{:name .., :licenses ..}]"
@@ -39,4 +45,4 @@
     [:h1 (str (:name user) "'s repositories")]
     (unordered-list
       (for [repo repo-list]
-        (repo-item (:username user) (:name repo))))))
+        (repo-item user repo)))))

@@ -2,3 +2,11 @@
         width: 25%;
         margin: 0 auto;
 }
+
+.needs-license {
+    color: #FF0000;
+}
+
+.has-license {
+    color: #00D330;
+}
