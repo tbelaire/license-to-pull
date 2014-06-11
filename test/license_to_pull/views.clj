@@ -24,7 +24,7 @@
      [:div.centered
       [:a {:href "/login", :class "pure-button"}
        [:i.fa.fa-github]
-       [:span "Sign in with GitHub"]]]))
+       [:span " Sign in with GitHub"]]]))
 
 ;; For listing repos
 (defn repo-item
