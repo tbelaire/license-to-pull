@@ -42,7 +42,7 @@
   "repo-list is [{:name .., :licenses ..}]"
   [user repo-list]
   (view-body
-    [:h1 (str (:name user) "'s repositories")]
+    [:h1 (str (or (:name user) (:username user)) "'s repositories")]
     (unordered-list
       (for [repo repo-list]
         (repo-item user repo)))))
