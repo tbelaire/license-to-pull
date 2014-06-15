@@ -25,6 +25,7 @@
 (defn update-file
   [user repo auth path message content]
   (let [prev-contents (tentacles.core/api-call :get "/repos/%s/%s/contents/%s" [user repo path] auth)]
+    (println prev-contents)
     (tentacles.core/api-call :put "/repos/%s/%s/contents/%s" [user repo path]
                              (merge {:message message
                                      :content (base64/encode content)

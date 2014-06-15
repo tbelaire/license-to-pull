@@ -15,19 +15,49 @@
                  ;; Other
                  [tentacles "0.2.5"]
                  ;;; For something like secrets.py, but with env vars
-                 [environ "0.5.0"]]
+                 [environ "0.5.0"]
+                 ;; CLJS
+                 [reagent "0.4.2"]
+                 [org.clojure/clojurescript "0.0-2173"]
+                 ]
 
   :plugins [[lein-ring "0.8.7"]
             [lein-pdo "0.1.1"]
             [lein-lesscss "1.2"]
-            [lein-environ "0.5.0"]]
+            [lein-environ "0.5.0"]
+            [lein-cljsbuild "1.0.2"]]
 
   :lesscss-paths ["less"]
   :lesscss-output-path "resources/public/css"
 
-  :aliases {"dev" ["pdo" "ring" "server-headless"]}
+  :aliases {"dev" ["pdo" "cljsbuild" "auto" "dev,","ring" "server-headless"]}
+  ; :hooks [leiningen.cljsbuild]
 
   :ring {:handler license-to-pull.core/app
          :init    license-to-pull.core/init}
 
-  :source-paths ["src"])
+  ; :profiles {:prod {:cljsbuild
+  ;                   {:builds
+  ;                    {:client {:compiler
+  ;                              {:optimizations :advanced
+  ;                               :preamble ^:replace ["reagent/react.min.js"]
+  ;                               :pretty-print false}}}}}
+  ;            :srcmap {:cljsbuild
+  ;                     {:builds
+  ;                      {:client {:compiler
+  ;                                {:source-map "client.js.map"
+  ;                                 :source-map-path "resources/public/js/"}}}}}}
+
+  :cljsbuild
+  {:builds
+   {:dev {:source-paths ["src/cljs"]
+          :notify-command ["growlnotify" "-m"]
+             :compiler
+             {:preamble ["reagent/react.js"]
+              :output-to "resources/public/js/main.js"
+              :output-dir "resources/public/js/main"
+              :pretty-print true
+              :print-input-delimiter true
+              :source-map "resources/public/js/main.js.map"}}}}
+
+  :source-paths ["src/clj", "src/cljs"])
