@@ -5,8 +5,20 @@
 
 .needs-license {
     color: #FF0000;
+    float: right;
 }
 
 .has-license {
     color: #00D330;
+    float: right;
 }
+
+/* Make list pretty */
+li {
+    padding: 0.1em 1em;
+    margin: 0.2em 0;
+    background-color: azure;
+    width: 80%;
+    border-radius: 1em;
+}
+
